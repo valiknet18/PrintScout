@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api._likes_helpers import fetch_like_counts
 from app.api.auth import current_user
 from app.core.db import get_session
 from app.models import CachedModel, User
@@ -35,6 +36,7 @@ class ModelDetailOut(BaseModel):
     is_free: bool
     tags: list[str]
     files: list[ModelFileOut]
+    like_count: int = 0
 
 
 @router.get("/model/{source}/{source_id}", response_model=ModelDetailOut)
@@ -65,6 +67,7 @@ async def get_model(
         for f in model.files
     ]
 
+    counts = await fetch_like_counts(session, [(model.source, model.source_id)])
     return ModelDetailOut(
         source=model.source,
         source_id=model.source_id,
@@ -74,4 +77,5 @@ async def get_model(
         is_free=model.is_free,
         tags=model.tags or [],
         files=files,
+        like_count=counts.get((model.source, model.source_id), 0),
     )

@@ -36,6 +36,9 @@ class User(Base):
     collections: Mapped[list["Collection"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    likes: Mapped[list["Like"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Printer(Base):
@@ -120,6 +123,27 @@ class Collection(Base):
         cascade="all, delete-orphan",
         order_by="CollectionItem.added_at.desc()",
     )
+
+
+class Like(Base):
+    __tablename__ = "likes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "cached_model_id", name="uq_like"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    cached_model_id: Mapped[int] = mapped_column(
+        ForeignKey("cached_models.id", ondelete="CASCADE"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="likes")
+    cached_model: Mapped[CachedModel] = relationship()
 
 
 class CollectionItem(Base):

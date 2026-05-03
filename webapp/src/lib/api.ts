@@ -41,6 +41,7 @@ export type SearchHit = {
   thumbnail_url: string | null
   is_free: boolean
   tags: string[]
+  like_count?: number
 }
 
 export type SearchResponse = {
@@ -174,4 +175,34 @@ export const CollectionsApi = {
     api.delete(
       `/api/collections/${id}/items/${encodeURIComponent(source)}/${encodeURIComponent(sourceId)}`,
     ),
+}
+
+export type LikeIdPair = { source: string; source_id: string }
+export type LikedListResponse = { items: SearchHit[] }
+export type LikeToggleResponse = {
+  source: string
+  source_id: string
+  liked: boolean
+  like_count: number
+}
+
+export const LikesApi = {
+  ids: () => api.get<LikeIdPair[]>("/api/likes/ids").then((r) => r.data),
+  list: (limit = 50) =>
+    api
+      .get<LikedListResponse>("/api/likes", { params: { limit } })
+      .then((r) => r.data),
+  like: (source: string, sourceId: string) =>
+    api
+      .post<LikeToggleResponse>("/api/likes", {
+        source,
+        source_id: sourceId,
+      })
+      .then((r) => r.data),
+  unlike: (source: string, sourceId: string) =>
+    api
+      .delete<LikeToggleResponse>(
+        `/api/likes/${encodeURIComponent(source)}/${encodeURIComponent(sourceId)}`,
+      )
+      .then((r) => r.data),
 }

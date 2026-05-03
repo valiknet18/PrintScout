@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   FolderHeart,
+  Heart,
   History,
   Plus,
   Search,
@@ -78,12 +79,20 @@ export default function Home() {
         </div>
       </Link>
 
-      <Link to="/collections" className="block">
-        <div className="flex items-center gap-3 rounded-2xl bg-tg-secondary-bg px-4 py-3">
-          <FolderHeart className="size-5 text-tg-link" />
-          <span className="font-medium">My collections</span>
-        </div>
-      </Link>
+      <div className="grid grid-cols-2 gap-3">
+        <Link to="/likes">
+          <div className="flex items-center gap-3 rounded-2xl bg-tg-secondary-bg px-4 py-3">
+            <Heart className="size-5 text-tg-destructive" />
+            <span className="font-medium">My likes</span>
+          </div>
+        </Link>
+        <Link to="/collections">
+          <div className="flex items-center gap-3 rounded-2xl bg-tg-secondary-bg px-4 py-3">
+            <FolderHeart className="size-5 text-tg-link" />
+            <span className="font-medium">Collections</span>
+          </div>
+        </Link>
+      </div>
 
       {recents.length > 0 && (
         <section>

@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api._likes_helpers import fetch_like_counts
 from app.api.auth import current_user
 from app.core.db import get_session
 from app.models import CachedModel, Collection, CollectionItem, User
@@ -32,6 +33,7 @@ class CollectionItemOut(BaseModel):
     thumbnail_url: str | None
     is_free: bool
     tags: list[str]
+    like_count: int = 0
 
 
 class CollectionDetail(BaseModel):
@@ -158,6 +160,10 @@ async def get_collection(
     coll = result.scalar_one_or_none()
     if coll is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "collection not found")
+    counts = await fetch_like_counts(
+        session,
+        [(it.cached_model.source, it.cached_model.source_id) for it in coll.items],
+    )
     return CollectionDetail(
         id=coll.id,
         name=coll.name,
@@ -170,6 +176,9 @@ async def get_collection(
                 thumbnail_url=it.cached_model.thumbnail_url,
                 is_free=it.cached_model.is_free,
                 tags=it.cached_model.tags or [],
+                like_count=counts.get(
+                    (it.cached_model.source, it.cached_model.source_id), 0
+                ),
             )
             for it in coll.items
         ],

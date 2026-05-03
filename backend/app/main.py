@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.collections import router as collections_router
 from app.api.fit import router as fit_router
+from app.api.likes import router as likes_router
 from app.api.model import router as model_router
 from app.api.popular import router as popular_router
 from app.api.routes import router as api_router
@@ -85,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(model_router)
     app.include_router(popular_router)
     app.include_router(collections_router)
+    app.include_router(likes_router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

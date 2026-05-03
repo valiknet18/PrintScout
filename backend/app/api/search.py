@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api._likes_helpers import fetch_like_counts
 from app.api.auth import current_user
 from app.core.cache import get_redis
 from app.core.db import get_session
@@ -32,6 +33,7 @@ class SearchHit(BaseModel):
     thumbnail_url: str | None
     is_free: bool
     tags: list[str]
+    like_count: int = 0
 
 
 class SearchResponse(BaseModel):
@@ -220,12 +222,18 @@ async def search(
     merged = _interleave([items for items, _ in results])[:page_size]
     total = sum(t for _, t in results)
 
+    counts = await fetch_like_counts(
+        session, [(h.source, h.source_id) for h in merged]
+    )
     return SearchResponse(
         total=total,
         page=page,
         page_size=page_size,
         items=[
-            SearchHit(**{k: v for k, v in asdict(h).items() if k != "preview_stl_url"})
+            SearchHit(
+                **{k: v for k, v in asdict(h).items() if k != "preview_stl_url"},
+                like_count=counts.get((h.source, h.source_id), 0),
+            )
             for h in merged
         ],
         query=search_q,

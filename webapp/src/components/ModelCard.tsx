@@ -1,9 +1,17 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
-import { Check, ExternalLink, ImageOff, Loader2, X } from "lucide-react"
+import {
+  Check,
+  ExternalLink,
+  Heart,
+  ImageOff,
+  Loader2,
+  X,
+} from "lucide-react"
 
 import { FitApi, type FitResponse, type SearchHit } from "@/lib/api"
+import { useLikedSet, useToggleLike } from "@/lib/likes"
 
 const SOURCE_LABELS: Record<string, string> = {
   printables: "Printables",
@@ -36,6 +44,15 @@ export function ModelCard({
     retry: false,
   })
 
+  const { set: likedSet } = useLikedSet()
+  const toggleLike = useToggleLike()
+  const liked = likedSet.has(`${hit.source}:${hit.source_id}`)
+  const baseCount = hit.like_count ?? 0
+  // Show optimistic count: if user just liked but server hasn't refreshed
+  // search payload yet, +1; if just unliked, -1.
+  const optimisticDelta = liked && baseCount === 0 ? 1 : 0
+  const displayCount = baseCount + optimisticDelta
+
   const detailHref = `/models/${encodeURIComponent(hit.source)}/${encodeURIComponent(
     hit.source_id,
   )}${printerId != null ? `?printer_id=${printerId}` : ""}`
@@ -66,6 +83,29 @@ export function ModelCard({
         <div className="absolute right-2 top-2">
           <FitBadge fit={fit.data} loading={fit.isLoading} />
         </div>
+        <button
+          type="button"
+          aria-label={liked ? "Unlike" : "Like"}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            toggleLike.mutate({
+              source: hit.source,
+              sourceId: hit.source_id,
+              liked,
+            })
+          }}
+          className={`absolute right-2 bottom-2 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium backdrop-blur-sm transition-colors ${
+            liked
+              ? "bg-tg-destructive text-white"
+              : "bg-black/55 text-white"
+          }`}
+        >
+          <Heart
+            className={`size-3.5 ${liked ? "fill-current" : ""}`}
+          />
+          {displayCount > 0 ? displayCount : ""}
+        </button>
       </div>
 
       <div className="flex flex-1 items-start justify-between gap-2 p-3">
