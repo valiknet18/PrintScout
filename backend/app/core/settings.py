@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+asyncpg://printscout:printscout@localhost:5432/printscout"
     )
-    redis_url: str = Field(default="redis://localhost:6379/0")
 
     thingiverse_token: str = Field(default="")
     myminifactory_key: str = Field(default="")

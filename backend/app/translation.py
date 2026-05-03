@@ -15,12 +15,15 @@ from __future__ import annotations
 import hashlib
 import logging
 import unicodedata
+from typing import TYPE_CHECKING
 
 import httpx
 from langdetect import DetectorFactory, LangDetectException, detect
-from redis.asyncio import Redis
 
 from app.core.cache import get_redis
+
+if TYPE_CHECKING:
+    from app.core.cache import InMemoryCache
 
 # langdetect is non-deterministic by default — seed it for stable results.
 DetectorFactory.seed = 0
@@ -116,7 +119,7 @@ async def _fetch_translation(
 async def translate_to_english(
     text: str,
     *,
-    redis: Redis | None = None,
+    redis: "InMemoryCache | None" = None,
     client: httpx.AsyncClient | None = None,
 ) -> str | None:
     """Return English translation of `text`, or None when no translation needed/available."""
