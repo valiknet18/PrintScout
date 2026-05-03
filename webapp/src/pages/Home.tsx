@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
-import { History, Search, Settings2, Sparkles, X } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { History, Plus, Search, Settings2, Sparkles, X } from "lucide-react"
 
 import { ModelCard } from "@/components/ModelCard"
 import { PrinterCard } from "@/components/PrinterCard"
@@ -11,6 +11,7 @@ import { recentSearches } from "@/lib/recentSearches"
 
 export default function Home() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const { data: printers, isLoading } = useQuery({
     queryKey: ["printers"],
     queryFn: PrintersApi.list,
@@ -21,6 +22,11 @@ export default function Home() {
     staleTime: 60 * 60 * 1000, // client-side: 1h before refetch
   })
 
+  const removePrinter = useMutation({
+    mutationFn: (id: number) => PrintersApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["printers"] }),
+  })
+
   const [recents, setRecents] = useState<string[]>(() => recentSearches.list())
 
   useEffect(() => {
@@ -28,6 +34,10 @@ export default function Home() {
       navigate("/onboarding", { replace: true })
     }
   }, [isLoading, printers, navigate])
+
+  const handleDeletePrinter = (id: number, name: string) => {
+    if (window.confirm(`Delete "${name}"?`)) removePrinter.mutate(id)
+  }
 
   const removeRecent = (q: string) => {
     recentSearches.remove(q)
@@ -126,16 +136,31 @@ export default function Home() {
       </section>
 
       <section>
-        <h2 className="mb-3 px-1 text-xs font-medium text-tg-section-header uppercase tracking-wide">
-          Your printers
-        </h2>
+        <header className="mb-3 flex items-center justify-between px-1">
+          <h2 className="text-xs font-medium text-tg-section-header uppercase tracking-wide">
+            My printers
+          </h2>
+          <Link
+            to="/printers/new"
+            className="flex items-center gap-1 text-xs text-tg-link"
+          >
+            <Plus className="size-3.5" />
+            Add
+          </Link>
+        </header>
         {isLoading ? (
           <p className="text-tg-hint px-1 text-sm">Loading...</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {printers?.map((p) => (
               <li key={p.id}>
-                <PrinterCard printer={p} />
+                <PrinterCard
+                  printer={p}
+                  onDelete={(id) => handleDeletePrinter(id, p.name)}
+                  pendingDelete={
+                    removePrinter.isPending && removePrinter.variables === p.id
+                  }
+                />
               </li>
             ))}
           </ul>
