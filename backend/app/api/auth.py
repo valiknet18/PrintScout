@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 from urllib.parse import parse_qsl
 
 from fastapi import Depends, Header, HTTPException, status
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.core.settings import get_settings
 from app.models import User
+
+log = logging.getLogger(__name__)
 
 
 def _verify_init_data(init_data: str, bot_token: str) -> dict[str, str]:
@@ -69,10 +72,18 @@ async def current_user(
         )
 
     if not authorization or not authorization.startswith("tma "):
+        log.warning(
+            "auth: missing/bad header — got %r",
+            (authorization[:20] + "...") if authorization else None,
+        )
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing tma auth header")
 
     init_data = authorization.removeprefix("tma ").strip()
-    parsed = _verify_init_data(init_data, settings.bot_token)
+    try:
+        parsed = _verify_init_data(init_data, settings.bot_token)
+    except HTTPException as e:
+        log.warning("auth: %s — initData prefix=%r", e.detail, init_data[:60])
+        raise
 
     user_json = parsed.get("user")
     if not user_json:
