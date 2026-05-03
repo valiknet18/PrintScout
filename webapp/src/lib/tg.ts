@@ -1,10 +1,18 @@
 import { retrieveLaunchParams, init as initSdk } from "@telegram-apps/sdk-react"
 
+type TelegramBackButton = {
+  show?: () => void
+  hide?: () => void
+  onClick?: (cb: () => void) => void
+  offClick?: (cb: () => void) => void
+}
+
 type TelegramWebApp = {
   initData?: string
   openLink?: (url: string, options?: { try_instant_view?: boolean }) => void
   ready?: () => void
   expand?: () => void
+  BackButton?: TelegramBackButton
 }
 
 declare global {

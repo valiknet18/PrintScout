@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom"
 
+import { useBackNav } from "@/lib/backNav"
 import CollectionDetail from "@/pages/CollectionDetail"
 import Collections from "@/pages/Collections"
 import Home from "@/pages/Home"
@@ -11,6 +12,7 @@ import Printers from "@/pages/Printers"
 import Search from "@/pages/Search"
 
 export default function App() {
+  useBackNav()
   return (
     <Routes>
       <Route path="/" element={<Home />} />
