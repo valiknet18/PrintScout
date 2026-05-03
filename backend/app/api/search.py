@@ -172,7 +172,9 @@ async def search(
     if printer is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "printer not found")
 
-    nozzle = printer.nozzle_mm if printer.kind == "fdm" else None
+    # We DON'T pre-filter at the source by printer.nozzle_mm. Most uploaders
+    # leave nozzle metadata blank, so it cuts ~90% of relevant hits. The real
+    # fit decision happens per-card via /api/check_fit (parses the actual STL).
     sources = enabled_sources()
     if not sources:
         return SearchResponse(
@@ -183,6 +185,10 @@ async def search(
             query=q,
             original_query=None,
         )
+
+    # Touch `printer` so unused-arg lints don't yell — kept around for future
+    # source-specific filters.
+    _ = printer
 
     # Translate non-English queries before hitting source catalogs.
     translated = await translate_to_english(q)
@@ -200,7 +206,7 @@ async def search(
                 paid=paid,
                 page=page,
                 per_source_size=per_source_size,
-                nozzle=nozzle,
+                nozzle=None,
             )
             for src in sources
         ),
