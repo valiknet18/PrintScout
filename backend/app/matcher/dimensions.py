@@ -44,12 +44,13 @@ async def get_or_compute_bbox(
     if cached_bbox is not None:
         return cached_bbox
 
-    file_url = await _resolve_preview_url(session, cached)
-    if not file_url:
+    resolved = await _resolve_preview_url(session, cached)
+    if not resolved:
         return None
+    file_url, fmt = resolved
 
     try:
-        bbox = await parse_bbox_from_url(file_url)
+        bbox = await parse_bbox_from_url(file_url, fmt=fmt)
     except FileTooLargeError as e:
         log.info("skipping bbox parse: %s", e)
         return None
@@ -72,12 +73,14 @@ async def get_or_compute_bbox(
 
 async def _resolve_preview_url(
     session: AsyncSession, cached: CachedModel
-) -> str | None:
-    """Return a parseable file URL, fetching from the source on first miss."""
+) -> tuple[str, str | None] | None:
+    """Return (url, fmt) for a parseable file. fmt may be None when only the
+    URL is known (Printables case — fmt is inferred from the URL extension)."""
     raw_meta = cached.raw_meta or {}
     url = raw_meta.get("preview_stl_url")
+    fmt = raw_meta.get("preview_stl_fmt")
     if url:
-        return url
+        return url, fmt
 
     source = get_source(cached.source)
     if source is None or not source.is_enabled:
@@ -92,9 +95,13 @@ async def _resolve_preview_url(
         return None
 
     chosen = files[0]
-    cached.raw_meta = {**raw_meta, "preview_stl_url": chosen.file_url}
+    cached.raw_meta = {
+        **raw_meta,
+        "preview_stl_url": chosen.file_url,
+        "preview_stl_fmt": chosen.fmt,
+    }
     await session.commit()
-    return chosen.file_url
+    return chosen.file_url, chosen.fmt
 
 
 async def _load_cached_bbox(
