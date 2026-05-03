@@ -124,7 +124,10 @@ async def translate_to_english(
 ) -> str | None:
     """Return English translation of `text`, or None when no translation needed/available."""
     text = text.strip()
-    if not text or not needs_translation(text):
+    if not text:
+        return None
+    if not needs_translation(text):
+        log.info("translate: skip (latin) %r", text)
         return None
 
     redis = redis or get_redis()
@@ -132,14 +135,18 @@ async def translate_to_english(
     try:
         cached = await redis.get(key)
     except Exception:
-        log.exception("redis get failed for translation cache; continuing")
+        log.exception("cache get failed for translation; continuing")
         cached = None
     if cached:
+        log.info("translate: cache hit %r → %r", text, cached)
         return cached if cached != text else None
 
     source_lang = _detect_source_lang(text)
     if not source_lang:
+        log.info("translate: no source lang detected for %r", text)
         return None
+
+    log.info("translate: %r (%s) → en …", text, source_lang)
 
     own_client = client is None
     client = client or httpx.AsyncClient()
@@ -150,8 +157,11 @@ async def translate_to_english(
             await client.aclose()
 
     if translated:
+        log.info("translate: %r (%s) → %r", text, source_lang, translated)
         try:
             await redis.set(key, translated, ex=_CACHE_TTL_SECONDS)
         except Exception:
-            log.exception("redis set failed for translation cache; continuing")
+            log.exception("cache set failed for translation; continuing")
+    else:
+        log.info("translate: no result for %r (%s)", text, source_lang)
     return translated
