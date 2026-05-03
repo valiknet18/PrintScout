@@ -3,9 +3,11 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import {
   ArrowLeft,
-  BookmarkPlus,
+  Bookmark,
+  BookmarkCheck,
   Check,
   ExternalLink,
+  Heart,
   ImageOff,
   Loader2,
   X,
@@ -14,6 +16,7 @@ import {
 import { AddToCollectionSheet } from "@/components/AddToCollectionSheet"
 import { Button } from "@/components/ui/button"
 import {
+  CollectionsApi,
   FitApi,
   ModelApi,
   PrintersApi,
@@ -21,6 +24,7 @@ import {
   type ModelDetail as ModelDetailT,
   type Printer,
 } from "@/lib/api"
+import { useLikedSet, useToggleLike } from "@/lib/likes"
 import { openExternalLink } from "@/lib/tg"
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -59,6 +63,17 @@ export default function ModelDetail() {
     retry: false,
   })
 
+  const { set: likedSet } = useLikedSet()
+  const toggleLike = useToggleLike()
+  const liked = likedSet.has(`${source}:${id}`)
+
+  const membership = useQuery({
+    enabled: model.isSuccess,
+    queryKey: ["collection-membership", source, id],
+    queryFn: () => CollectionsApi.membership(source, id),
+  })
+  const inAnyCollection = (membership.data?.length ?? 0) > 0
+
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-10 flex items-center gap-2 bg-tg-bg px-3 pt-3 pb-2">
@@ -83,6 +98,11 @@ export default function ModelDetail() {
           printer={printer}
           fit={fit.data}
           fitLoading={fit.isLoading}
+          liked={liked}
+          inAnyCollection={inAnyCollection}
+          onLikeTap={() =>
+            toggleLike.mutate({ source, sourceId: id, liked })
+          }
           onSaveTap={() => setSheetOpen(true)}
         />
       ) : null}
@@ -103,12 +123,18 @@ function Body({
   printer,
   fit,
   fitLoading,
+  liked,
+  inAnyCollection,
+  onLikeTap,
   onSaveTap,
 }: {
   model: ModelDetailT
   printer: Printer | null
   fit: FitResponse | undefined
   fitLoading: boolean
+  liked: boolean
+  inAnyCollection: boolean
+  onLikeTap: () => void
   onSaveTap: () => void
 }) {
   const [imgError, setImgError] = useState(false)
@@ -157,11 +183,31 @@ function Body({
         <Button
           variant="secondary"
           size="md"
+          onClick={onLikeTap}
+          aria-label={liked ? "Unlike" : "Like"}
+          className={`px-4 ${
+            liked ? "!bg-tg-destructive !text-white" : ""
+          }`}
+        >
+          <Heart
+            className={`size-4 ${liked ? "fill-current" : ""}`}
+            strokeWidth={2.5}
+          />
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
           onClick={onSaveTap}
           aria-label="Add to collection"
-          className="px-4"
+          className={`px-4 ${
+            inAnyCollection ? "!bg-tg-button !text-tg-button-text" : ""
+          }`}
         >
-          <BookmarkPlus className="size-4" />
+          {inAnyCollection ? (
+            <BookmarkCheck className="size-4 fill-current" strokeWidth={2.5} />
+          ) : (
+            <Bookmark className="size-4" strokeWidth={2.5} />
+          )}
         </Button>
       </div>
 

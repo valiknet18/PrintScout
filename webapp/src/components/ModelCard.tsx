@@ -95,16 +95,17 @@ export function ModelCard({
               liked,
             })
           }}
-          className={`absolute right-2 bottom-2 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium backdrop-blur-sm transition-colors ${
+          className={`absolute right-2 bottom-2 flex min-w-[2.25rem] items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg backdrop-blur-sm transition-colors ${
             liked
               ? "bg-tg-destructive text-white"
-              : "bg-black/55 text-white"
+              : "bg-white/95 text-tg-destructive"
           }`}
         >
           <Heart
-            className={`size-3.5 ${liked ? "fill-current" : ""}`}
+            className={`size-4 ${liked ? "fill-current" : ""}`}
+            strokeWidth={2.5}
           />
-          {displayCount > 0 ? displayCount : ""}
+          {displayCount > 0 && <span>{displayCount}</span>}
         </button>
       </div>
 
