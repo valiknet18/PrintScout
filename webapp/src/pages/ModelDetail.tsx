@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import {
   ArrowLeft,
+  BookmarkPlus,
   Check,
   ExternalLink,
   ImageOff,
@@ -10,6 +11,7 @@ import {
   X,
 } from "lucide-react"
 
+import { AddToCollectionSheet } from "@/components/AddToCollectionSheet"
 import { Button } from "@/components/ui/button"
 import {
   FitApi,
@@ -35,6 +37,7 @@ export default function ModelDetail() {
   const [params] = useSearchParams()
   const printerIdParam = params.get("printer_id")
   const printerId = printerIdParam ? Number(printerIdParam) : null
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const model = useQuery({
     queryKey: ["model", source, id],
@@ -75,8 +78,22 @@ export default function ModelDetail() {
       ) : model.isError ? (
         <Hint text={`Couldn't load model: ${(model.error as Error).message}`} />
       ) : model.data ? (
-        <Body model={model.data} printer={printer} fit={fit.data} fitLoading={fit.isLoading} />
+        <Body
+          model={model.data}
+          printer={printer}
+          fit={fit.data}
+          fitLoading={fit.isLoading}
+          onSaveTap={() => setSheetOpen(true)}
+        />
       ) : null}
+
+      {sheetOpen && (
+        <AddToCollectionSheet
+          source={source}
+          sourceId={id}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -86,11 +103,13 @@ function Body({
   printer,
   fit,
   fitLoading,
+  onSaveTap,
 }: {
   model: ModelDetailT
   printer: Printer | null
   fit: FitResponse | undefined
   fitLoading: boolean
+  onSaveTap: () => void
 }) {
   const [imgError, setImgError] = useState(false)
   const sourceLabel = SOURCE_LABELS[model.source] ?? model.source
@@ -126,14 +145,25 @@ function Body({
 
       <h2 className="text-lg font-semibold leading-tight">{model.title}</h2>
 
-      <Button
-        size="full"
-        onClick={() => openExternalLink(model.url)}
-        className="gap-2"
-      >
-        Open on {sourceLabel}
-        <ExternalLink className="size-4" />
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          size="full"
+          onClick={() => openExternalLink(model.url)}
+          className="flex-1 gap-2"
+        >
+          Open on {sourceLabel}
+          <ExternalLink className="size-4" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onSaveTap}
+          aria-label="Add to collection"
+          className="px-4"
+        >
+          <BookmarkPlus className="size-4" />
+        </Button>
+      </div>
 
       <FitDetails fit={fit} printer={printer} loading={fitLoading} />
 

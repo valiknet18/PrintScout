@@ -33,6 +33,9 @@ class User(Base):
     printers: Mapped[list["Printer"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    collections: Mapped[list["Collection"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Printer(Base):
@@ -97,3 +100,46 @@ class ModelFile(Base):
     parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     model: Mapped[CachedModel] = relationship(back_populates="files")
+
+
+class Collection(Base):
+    __tablename__ = "collections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="collections")
+    items: Mapped[list["CollectionItem"]] = relationship(
+        back_populates="collection",
+        cascade="all, delete-orphan",
+        order_by="CollectionItem.added_at.desc()",
+    )
+
+
+class CollectionItem(Base):
+    __tablename__ = "collection_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "collection_id", "cached_model_id", name="uq_collection_item"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    collection_id: Mapped[int] = mapped_column(
+        ForeignKey("collections.id", ondelete="CASCADE"), index=True
+    )
+    cached_model_id: Mapped[int] = mapped_column(
+        ForeignKey("cached_models.id", ondelete="CASCADE"), index=True
+    )
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    collection: Mapped[Collection] = relationship(back_populates="items")
+    cached_model: Mapped[CachedModel] = relationship()

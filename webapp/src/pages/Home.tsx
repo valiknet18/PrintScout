@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { History, Plus, Search, Settings2, Sparkles, X } from "lucide-react"
+import {
+  FolderHeart,
+  History,
+  Plus,
+  Search,
+  Settings2,
+  Sparkles,
+  X,
+} from "lucide-react"
 
 import { ModelCard } from "@/components/ModelCard"
 import { PrinterCard } from "@/components/PrinterCard"
@@ -67,6 +75,13 @@ export default function Home() {
         <div className="flex items-center gap-3 rounded-2xl bg-tg-secondary-bg px-4 py-4">
           <Search className="size-5 text-tg-hint" />
           <span className="text-tg-hint">Search models...</span>
+        </div>
+      </Link>
+
+      <Link to="/collections" className="block">
+        <div className="flex items-center gap-3 rounded-2xl bg-tg-secondary-bg px-4 py-3">
+          <FolderHeart className="size-5 text-tg-link" />
+          <span className="font-medium">My collections</span>
         </div>
       </Link>
 

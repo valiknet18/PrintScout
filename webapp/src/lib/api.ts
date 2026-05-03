@@ -133,3 +133,45 @@ export const PopularApi = {
       .get<PopularResponse>("/api/popular", { params: { limit } })
       .then((r) => r.data),
 }
+
+export type CollectionListItem = {
+  id: number
+  name: string
+  item_count: number
+  cover_thumbnail_url: string | null
+}
+
+export type CollectionDetail = {
+  id: number
+  name: string
+  items: SearchHit[]
+}
+
+export const CollectionsApi = {
+  list: () =>
+    api.get<CollectionListItem[]>("/api/collections").then((r) => r.data),
+  create: (name: string) =>
+    api
+      .post<CollectionListItem>("/api/collections", { name })
+      .then((r) => r.data),
+  remove: (id: number) => api.delete(`/api/collections/${id}`),
+  get: (id: number) =>
+    api.get<CollectionDetail>(`/api/collections/${id}`).then((r) => r.data),
+  membership: (source: string, sourceId: string) =>
+    api
+      .get<number[]>(
+        `/api/collections/membership/${encodeURIComponent(source)}/${encodeURIComponent(sourceId)}`,
+      )
+      .then((r) => r.data),
+  addItem: (id: number, source: string, sourceId: string) =>
+    api
+      .post<SearchHit>(`/api/collections/${id}/items`, {
+        source,
+        source_id: sourceId,
+      })
+      .then((r) => r.data),
+  removeItem: (id: number, source: string, sourceId: string) =>
+    api.delete(
+      `/api/collections/${id}/items/${encodeURIComponent(source)}/${encodeURIComponent(sourceId)}`,
+    ),
+}
